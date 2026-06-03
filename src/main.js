@@ -60,21 +60,21 @@ const R = 2.7;           // радиус спирали
 const ANG = 0.62;        // шаг закрутки спирали (рад)
 const topY = (N - 1) * STEP * 0.5;
 
-// --- материал liquid glass (преломление + радужность)
+// --- материал matte liquid glass (фростед: мутное преломление)
 const glass = new THREE.MeshPhysicalMaterial({
   transmission: 1.0,
-  thickness: 0.9,
-  roughness: 0.13,
-  ior: 1.45,
+  thickness: 1.2,
+  roughness: 0.55,          // ← высокая шероховатость = матовое, «молочное» стекло
+  ior: 1.42,
   metalness: 0.0,
-  clearcoat: 1.0,
-  clearcoatRoughness: 0.08,
-  iridescence: 0.7,
+  clearcoat: 0.4,
+  clearcoatRoughness: 0.45,
+  iridescence: 0.35,
   iridescenceIOR: 1.3,
-  specularIntensity: 1.0,
-  envMapIntensity: 1.4,
+  specularIntensity: 0.8,
+  envMapIntensity: 1.1,
   attenuationColor: new THREE.Color(0x9ec2ff),
-  attenuationDistance: 3.0,
+  attenuationDistance: 2.2,
   transparent: true,
 });
 
@@ -162,6 +162,39 @@ lenis.on('scroll', ({ progress }) => { targetProg = progress || 0; });
 const flyer = document.querySelector('#flyer');
 const bottomY = -topY;
 
+// --- клик/наведение по карточкам → Telegram
+const TG = 'https://t.me/whooopa';
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let pointerActive = false;
+let hovered = null;
+const down = { x: 0, y: 0 };
+
+function setPointer(e) {
+  pointer.x = (e.clientX / sizes.w) * 2 - 1;
+  pointer.y = -(e.clientY / sizes.h) * 2 + 1;
+  pointerActive = true;
+}
+function setHover(obj) {
+  if (hovered === obj) return;
+  if (hovered) gsap.to(hovered.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: 'power2.out' });
+  hovered = obj;
+  if (hovered) gsap.to(hovered.scale, { x: 1.12, y: 1.12, z: 1.12, duration: 0.35, ease: 'power2.out' });
+  canvas.style.cursor = hovered ? 'pointer' : 'default';
+}
+
+canvas.addEventListener('pointermove', setPointer);
+canvas.addEventListener('pointerdown', (e) => { down.x = e.clientX; down.y = e.clientY; });
+canvas.addEventListener('pointerup', (e) => {
+  // отличаем клик от скролл-перетаскивания
+  if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return;
+  setPointer(e);
+  raycaster.setFromCamera(pointer, camera);
+  if (raycaster.intersectObjects(cards, false)[0]) {
+    window.open(TG, '_blank', 'noopener');
+  }
+});
+
 const clock = new THREE.Clock();
 let prog = 0;
 function tick(time) {
@@ -181,6 +214,13 @@ function tick(time) {
   for (const c of cards) {
     c.position.y += Math.sin(t * 1.2 + c.userData.phase) * 0.0012;
     c.rotation.z = Math.sin(t * 0.8 + c.userData.phase) * 0.04;
+  }
+
+  // наведение на карточки (подсветка масштабом)
+  if (pointerActive) {
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(cards, false)[0];
+    setHover(hit ? hit.object : null);
   }
 
   // текст слегка уезжает и затухает к концу

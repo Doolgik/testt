@@ -32,7 +32,48 @@ html, body {
   font-weight: 700;
   color: var(--ink);
   opacity: 0.9;
+  text-decoration: none;
+  cursor: pointer;
 }
+.brand:hover { opacity: 1; }
+
+/* ссылка-юзернейм в углу */
+.tg {
+  position: fixed;
+  top: 28px;
+  right: 32px;
+  z-index: 3;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  opacity: 0.9;
+  cursor: pointer;
+}
+.tg:hover { opacity: 1; }
+
+/* стеклянная (frosted) кнопка-CTA */
+.cta {
+  display: inline-block;
+  margin-top: 1.6rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  pointer-events: auto;          /* кликабельна, хотя .flyer не ловит события */
+  cursor: pointer;
+  background: rgba(180, 205, 255, 0.10);
+  border: 1px solid rgba(200, 220, 255, 0.30);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 8px 30px rgba(40, 70, 140, 0.25), inset 0 1px 0 rgba(255,255,255,0.25);
+  transition: transform 0.25s ease, background 0.25s ease;
+}
+.cta:hover { transform: translateY(-2px); background: rgba(180, 205, 255, 0.18); }
 
 .flyer {
   position: fixed;
