@@ -1,8 +1,7 @@
 :root {
-  /* красивый тёплый бежевый */
-  --bg: #e7dcc4;
-  --ink: #3a2c1d;
-  --muted: #7a6a55;
+  --bg: #0c0e16;
+  --ink: #eef2ff;
+  --muted: #9aa6c4;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -14,7 +13,6 @@ html, body {
   overflow-x: hidden;
 }
 
-/* WebGL-канвас на весь экран, зафиксирован сзади */
 #webgl {
   position: fixed;
   inset: 0;
@@ -24,46 +22,43 @@ html, body {
   z-index: 0;
 }
 
-/* бренд */
 .brand {
   position: fixed;
   top: 28px;
   left: 32px;
   z-index: 3;
   font-size: 0.85rem;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.28em;
   font-weight: 700;
   color: var(--ink);
-  mix-blend-mode: multiply;
+  opacity: 0.9;
 }
 
-/* летящее описание (двигается через JS) */
 .flyer {
   position: fixed;
   top: 50%;
-  left: 50%;
+  left: 8vw;
   z-index: 2;
-  width: min(80vw, 380px);
-  transform: translate(-50%, -50%);
-  text-align: center;
+  width: min(78vw, 360px);
+  transform: translateY(-50%);
   pointer-events: none;
-  will-change: transform;
+  will-change: transform, opacity;
 }
 .flyer .kicker {
   font-size: 0.72rem;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.34em;
   color: var(--muted);
   margin-bottom: 1rem;
 }
 .flyer h1 {
-  font-size: clamp(2.4rem, 8vw, 4.5rem);
-  line-height: 0.95;
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  line-height: 0.92;
   letter-spacing: -0.02em;
   font-weight: 700;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.1rem;
 }
 .flyer .desc {
-  font-size: 1rem;
+  font-size: 0.98rem;
   line-height: 1.6;
   color: var(--muted);
 }
@@ -79,12 +74,10 @@ html, body {
   color: var(--muted);
   animation: bob 2s ease-in-out infinite;
 }
-@keyframes bob { 0%,100%{ transform: translate(-50%, 0); } 50%{ transform: translate(-50%, 6px); } }
+@keyframes bob { 0%,100%{ transform: translate(-50%,0);} 50%{ transform: translate(-50%,6px);} }
 
-/* высота для прокрутки */
-.scrollspace { height: 320vh; pointer-events: none; }
+.scrollspace { height: 420vh; pointer-events: none; }
 
-/* loader */
 .loader {
   position: fixed;
   inset: 0;

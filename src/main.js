@@ -8,195 +8,184 @@ import gsap from 'gsap';
 import Lenis from '@studio-freight/lenis';
 
 // ---------------------------------------------------------------------------
-// Renderer + ACES tone mapping (фотореалистичный контраст)
+// Renderer
 // ---------------------------------------------------------------------------
 const canvas = document.querySelector('#webgl');
 const sizes = { w: innerWidth, h: innerHeight };
-const BEIGE = 0xe7dcc4;
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(sizes.w, sizes.h);
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.1;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(BEIGE);
+
+// фон-градиент (его и преломляет стекло)
+function gradientTexture(c0, c1, c2) {
+  const cv = document.createElement('canvas');
+  cv.width = 4; cv.height = 512;
+  const g = cv.getContext('2d').createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, c0); g.addColorStop(0.5, c1); g.addColorStop(1, c2);
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 4, 512);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+scene.background = gradientTexture('#1a2138', '#141a2c', '#0a0c14');
 
 const camera = new THREE.PerspectiveCamera(45, sizes.w / sizes.h, 0.1, 100);
-camera.position.set(0, 0, 6);
+camera.position.set(0, 5, 7.5);
 
-// HDR-окружение для реальных отражений на материалах
+// HDR-окружение → отражения/преломления на стекле
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-// тёплый свет
-const key = new THREE.DirectionalLight(0xfff2dd, 2.4);
-key.position.set(3, 5, 4);
-scene.add(key);
-const fill = new THREE.DirectionalLight(0xcfe0ff, 1.0);
-fill.position.set(-4, -2, -3);
-scene.add(fill);
-scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+// цветные источники подкрашивают блики стекла
+const l1 = new THREE.PointLight(0x5b8bff, 60, 40); l1.position.set(-5, 4, 4); scene.add(l1);
+const l2 = new THREE.PointLight(0xff77cc, 50, 40); l2.position.set(5, -3, 3); scene.add(l2);
+const l3 = new THREE.PointLight(0x66ffe0, 40, 40); l3.position.set(0, 0, -6); scene.add(l3);
+scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
 // ---------------------------------------------------------------------------
-// Процедурный кофейный стаканчик (бумага + крафт-держатель + кофе + пар)
+// «Позвоночник» + карточки liquid glass на спирали
 // ---------------------------------------------------------------------------
-const cup = new THREE.Group();          // внешний — двигаем по кривой
-const cupInner = new THREE.Group();     // внутренний — центрируем для вращения
-cup.add(cupInner);
-scene.add(cup);
+const spine = new THREE.Group();
+scene.add(spine);
 
-// --- профиль стенки стакана (x = радиус, y = высота) с реальной толщиной
-const P = (x, y) => new THREE.Vector2(x, y);
-const profile = [
-  P(0.00, 0.04), P(0.50, 0.04),   // внутреннее дно
-  P(0.66, 1.66),                  // внутренняя стенка вверх
-  P(0.70, 1.72), P(0.745, 1.72),  // закатанный ободок
-  P(0.72, 1.64),
-  P(0.70, 1.40),
-  P(0.62, 0.10),                  // внешняя стенка вниз
-  P(0.55, 0.00), P(0.00, 0.00),   // внешнее дно (закрывает низ)
-];
-const paperMat = new THREE.MeshStandardMaterial({
-  color: 0xf2ebdc, roughness: 0.82, metalness: 0.0,
-  side: THREE.DoubleSide, envMapIntensity: 1.0,
+const N = 13;            // позвонков/карточек
+const STEP = 0.95;       // расстояние между уровнями
+const R = 2.7;           // радиус спирали
+const ANG = 0.62;        // шаг закрутки спирали (рад)
+const topY = (N - 1) * STEP * 0.5;
+
+// --- материал liquid glass (преломление + радужность)
+const glass = new THREE.MeshPhysicalMaterial({
+  transmission: 1.0,
+  thickness: 0.9,
+  roughness: 0.13,
+  ior: 1.45,
+  metalness: 0.0,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.08,
+  iridescence: 0.7,
+  iridescenceIOR: 1.3,
+  specularIntensity: 1.0,
+  envMapIntensity: 1.4,
+  attenuationColor: new THREE.Color(0x9ec2ff),
+  attenuationDistance: 3.0,
+  transparent: true,
 });
-const body = new THREE.Mesh(new THREE.LatheGeometry(profile, 80), paperMat);
-cupInner.add(body);
 
-// --- крафт-держатель (рукав)
-const sleeveMat = new THREE.MeshStandardMaterial({
-  color: 0xb07d4f, roughness: 0.92, metalness: 0.0, envMapIntensity: 0.8,
-});
-const sleeve = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.665, 0.60, 0.62, 80, 1, true),
-  sleeveMat
-);
-sleeve.position.y = 0.78;
-cupInner.add(sleeve);
-
-// --- поверхность кофе (тёмная, глянцевая — ловит отражения окружения)
-const coffeeMat = new THREE.MeshStandardMaterial({
-  color: 0x3c2414, roughness: 0.28, metalness: 0.0, envMapIntensity: 1.4,
-});
-const coffee = new THREE.Mesh(new THREE.CircleGeometry(0.63, 64), coffeeMat);
-coffee.rotation.x = -Math.PI / 2;
-coffee.position.y = 1.55;
-cupInner.add(coffee);
-
-// --- пар над кофе (мягкие частицы, поднимаются и тают)
-const STEAM = 120;
-const sPos = new Float32Array(STEAM * 3);
-const sSeed = new Float32Array(STEAM);
-for (let i = 0; i < STEAM; i++) {
-  const a = Math.random() * Math.PI * 2;
-  const r = Math.random() * 0.4;
-  sPos[i * 3 + 0] = Math.cos(a) * r;
-  sPos[i * 3 + 1] = 1.6;
-  sPos[i * 3 + 2] = Math.sin(a) * r;
-  sSeed[i] = Math.random();
+// --- геометрия карточки: скруглённый прямоугольник с фаской (толстое стекло)
+function roundedRect(w, h, r) {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
 }
-const steamGeo = new THREE.BufferGeometry();
-steamGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
-steamGeo.setAttribute('aSeed', new THREE.BufferAttribute(sSeed, 1));
-const steamMat = new THREE.ShaderMaterial({
-  transparent: true, depthWrite: false, blending: THREE.NormalBlending,
-  uniforms: { uTime: { value: 0 } },
-  vertexShader: /* glsl */ `
-    uniform float uTime; attribute float aSeed; varying float vA;
-    void main(){
-      float life = fract(uTime * 0.13 + aSeed);
-      vec3 p = position;
-      p.y += life * 1.6;
-      p.x += sin(uTime * 0.8 + aSeed * 6.28) * 0.12 * life;
-      p.z += cos(uTime * 0.6 + aSeed * 6.28) * 0.12 * life;
-      vA = sin(life * 3.1415) * 0.22;       // плавное появление/исчезание
-      vec4 mv = modelViewMatrix * vec4(p, 1.0);
-      gl_PointSize = (40.0 / -mv.z) * (0.5 + life);
-      gl_Position = projectionMatrix * mv;
-    }`,
-  fragmentShader: /* glsl */ `
-    varying float vA;
-    void main(){
-      vec2 c = gl_PointCoord - 0.5;
-      float d = smoothstep(0.5, 0.0, length(c));
-      gl_FragColor = vec4(vec3(1.0), d * vA);
-    }`,
+const cardGeo = new THREE.ExtrudeGeometry(roundedRect(1.5, 2.05, 0.22), {
+  depth: 0.14, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.07, bevelSegments: 5, curveSegments: 24,
 });
-const steam = new THREE.Points(steamGeo, steamMat);
-cupInner.add(steam);
+cardGeo.center();
 
-// центрируем стакан по высоте, чтобы он вращался вокруг центра
-cupInner.position.y = -0.86;
-cup.scale.setScalar(1.15);
+// --- центральный хребет: матовый стержень + светящийся «спинной мозг»
+const rodMat = new THREE.MeshPhysicalMaterial({ color: 0xcfd6e6, metalness: 1.0, roughness: 0.25, envMapIntensity: 1.2 });
+const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, N * STEP + 1.2, 24), rodMat);
+spine.add(rod);
+const coreMat = new THREE.MeshBasicMaterial({ color: 0x7fd4ff });
+const core = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, N * STEP + 1.2, 16), coreMat);
+spine.add(core);
+
+const vertMat = new THREE.MeshPhysicalMaterial({ color: 0xe8edff, metalness: 0.9, roughness: 0.2, envMapIntensity: 1.2 });
+const up = new THREE.Vector3(0, 1, 0);
+const cards = [];
+
+for (let i = 0; i < N; i++) {
+  const y = topY - i * STEP;
+  const a = i * ANG;
+  const px = Math.sin(a) * R;
+  const pz = Math.cos(a) * R;
+
+  // позвонок — кольцо вокруг стержня
+  const vert = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.075, 16, 32), vertMat);
+  vert.position.set(0, y, 0);
+  vert.rotation.x = Math.PI / 2;
+  spine.add(vert);
+
+  // «отросток» от хребта к карточке
+  const dir = new THREE.Vector3(px, 0, pz);
+  const len = dir.length();
+  const conn = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, len, 12), vertMat);
+  conn.position.set(px / 2, y, pz / 2);
+  conn.quaternion.setFromUnitVectors(up, dir.clone().normalize());
+  spine.add(conn);
+
+  // карточка liquid glass, лицом наружу
+  const card = new THREE.Mesh(cardGeo, glass);
+  card.position.set(px, y, pz);
+  card.rotation.y = a;        // смотрит наружу по касательной к спирали
+  card.rotation.x = -0.05;
+  card.userData.phase = i * 0.5;
+  spine.add(card);
+  cards.push(card);
+}
 
 // intro
-cup.scale.setScalar(0.001);
-gsap.to(cup.scale, { x: 1.15, y: 1.15, z: 1.15, duration: 1.4, ease: 'power3.out', delay: 0.2 });
+spine.scale.setScalar(0.001);
+gsap.to(spine.scale, { x: 1, y: 1, z: 1, duration: 1.6, ease: 'power3.out', delay: 0.2 });
 window.addEventListener('load', () => {
   document.querySelector('#loader')?.classList.add('hidden');
-  gsap.from('.flyer', { opacity: 0, duration: 1.2, ease: 'power2.out', delay: 0.4 });
+  gsap.from('.flyer', { opacity: 0, x: -30, duration: 1.1, ease: 'power2.out', delay: 0.5 });
 });
 
 // ---------------------------------------------------------------------------
-// Постобработка: очень лёгкий bloom (мягкие блики/пар)
+// Постобработка: bloom для свечения хребта и бликов стекла
 // ---------------------------------------------------------------------------
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(sizes.w, sizes.h), 0.18, 0.6, 0.95));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(sizes.w, sizes.h), 0.5, 0.7, 0.85));
 composer.addPass(new OutputPass());
 
 // ---------------------------------------------------------------------------
-// Кривая Безье (нормализованная): слева внизу → дуга вверх → справа внизу
+// Скролл → вращение оси + спуск камеры вдоль позвоночника
 // ---------------------------------------------------------------------------
-const curve = new THREE.CubicBezierCurve3(
-  new THREE.Vector3(-1.0, -0.18, 0),
-  new THREE.Vector3(-0.5, 1.05, 0),
-  new THREE.Vector3(0.5, 1.05, 0),
-  new THREE.Vector3(1.0, -0.18, 0)
-);
-
-const flyer = document.querySelector('#flyer');
-
-// инерционный скролл
 const lenis = new Lenis({ smoothWheel: true, lerp: 0.08 });
 let targetProg = 0;
 lenis.on('scroll', ({ progress }) => { targetProg = progress || 0; });
 
-// видимые мировые размеры на глубине z=0
-function worldExtents() {
-  const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.position.length();
-  return { halfH, halfW: halfH * camera.aspect };
-}
+const flyer = document.querySelector('#flyer');
+const bottomY = -topY;
 
-// ---------------------------------------------------------------------------
-// Цикл
-// ---------------------------------------------------------------------------
 const clock = new THREE.Clock();
 let prog = 0;
 function tick(time) {
   lenis.raf(time);
   const t = clock.getElapsedTime();
-  steamMat.uniforms.uTime.value = t;
+  prog += (targetProg - prog) * 0.08;     // плавность
 
-  // доп. сглаживание прогресса → «плавно»
-  prog += (targetProg - prog) * 0.08;
+  // вся ось вращается вокруг Y (+ лёгкое холостое вращение)
+  spine.rotation.y = prog * Math.PI * 2 * 1.5 + t * 0.04;
 
-  const { halfW, halfH } = worldExtents();
+  // камера спускается вдоль хребта сверху вниз
+  camera.position.y = THREE.MathUtils.lerp(topY + 1.0, bottomY - 1.0, prog);
+  camera.position.x = Math.sin(t * 0.2) * 0.3;   // едва заметное дыхание
+  camera.lookAt(0, camera.position.y, 0);
 
-  // --- стаканчик летит по кривой Безье (слева направо)
-  const p = curve.getPoint(prog);
-  cup.position.x = p.x * halfW * 0.78;
-  cup.position.y = p.y * halfH * 0.62;
-  cupInner.rotation.y = prog * Math.PI * 4 + t * 0.25;       // вращение
-  cup.rotation.z = Math.sin(prog * Math.PI) * -0.28;          // наклон в полёте
+  // «жидкое» покачивание карточек
+  for (const c of cards) {
+    c.position.y += Math.sin(t * 1.2 + c.userData.phase) * 0.0012;
+    c.rotation.z = Math.sin(t * 0.8 + c.userData.phase) * 0.04;
+  }
 
-  // --- описание летит навстречу (справа налево, дуга вниз)
-  const tx = (0.5 - prog) * sizes.w * 0.8;
-  const ty = Math.sin(prog * Math.PI) * sizes.h * 0.16;
-  flyer.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
-  flyer.style.opacity = String(0.25 + 0.75 * Math.sin(prog * Math.PI)); // мягкое затухание у краёв
+  // текст слегка уезжает и затухает к концу
+  flyer.style.opacity = String(1 - prog * 0.85);
+  flyer.style.transform = `translateY(calc(-50% + ${prog * -60}px))`;
 
   composer.render();
   requestAnimationFrame(tick);
