@@ -3,37 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Immersive · WebGL Experience</title>
+  <title>Atelier Coffee · WebGL</title>
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
   <canvas id="webgl"></canvas>
 
-  <!-- Минимальный HTML-слой поверх WebGL: текст, доступность, роутинг -->
-  <main class="overlay">
-    <section class="hero">
-      <p class="kicker">CREATIVE DIGITAL EXPERIENCES</p>
-      <h1 class="title">Immersive<br />WebGL</h1>
-      <p class="sub">Three.js · PBR · HDR IBL · GSAP · Bloom</p>
-    </section>
+  <!-- Бренд-метка -->
+  <div class="brand">☕ ATELIER&nbsp;COFFEE</div>
 
-    <section class="block">
-      <h2>Скролль вниз</h2>
-      <p>Модель вращается по скроллу и наклоняется за курсором. Реальные отражения — из HDR-окружения.</p>
-    </section>
+  <!-- Описание, которое летит навстречу стаканчику по мере скролла -->
+  <section class="flyer" id="flyer">
+    <p class="kicker">SINGLE ORIGIN · СВЕЖАЯ ОБЖАРКА</p>
+    <h1>Тёплый<br />глоток утра</h1>
+    <p class="desc">
+      Бархатная крема, ноты карамели и тёмного шоколада.
+      Прокручивай — и наблюдай, как чашка плывёт по дуге.
+    </p>
+  </section>
 
-    <section class="block">
-      <h2>Физически корректный рендер</h2>
-      <p>PBR-материалы, image-based lighting, ACES tone mapping и bloom дают «RTX»-картинку без пластика.</p>
-    </section>
+  <div class="hint">↓ скролль ↓</div>
 
-    <section class="block">
-      <h2>Крути дальше</h2>
-      <p>Полный оборот модели привязан к прогрессу скролла.</p>
-    </section>
-  </main>
+  <!-- Пространство для прокрутки -->
+  <div class="scrollspace"></div>
 
-  <div class="loader" id="loader"><span>загрузка…</span></div>
+  <div class="loader" id="loader"><span>варим кофе…</span></div>
 
   <script type="module" src="/src/main.js"></script>
 </body>
