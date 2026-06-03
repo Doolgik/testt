@@ -1,0 +1,99 @@
+:root {
+  --bg: #05060a;
+  --fg: #eaf2ff;
+  --accent: #9ecbff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Helvetica Neue", Inter, system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* WebGL-канвас на весь экран, зафиксирован сзади */
+#webgl {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  z-index: 0;
+}
+
+/* HTML поверх канваса */
+.overlay {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hero {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8vw;
+}
+
+.kicker {
+  font-size: 0.8rem;
+  letter-spacing: 0.4em;
+  color: var(--accent);
+  margin-bottom: 1.5rem;
+  opacity: 0.85;
+}
+
+.title {
+  font-size: clamp(3rem, 12vw, 11rem);
+  line-height: 0.92;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  mix-blend-mode: screen;
+}
+
+.sub {
+  margin-top: 2rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.15em;
+  opacity: 0.7;
+}
+
+.block {
+  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8vw;
+  max-width: 720px;
+}
+
+.block h2 {
+  font-size: clamp(2rem, 6vw, 4rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.block p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  opacity: 0.75;
+}
+
+/* Loader, который скрывается после старта рендера */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  letter-spacing: 0.3em;
+  font-size: 0.8rem;
+  color: var(--accent);
+  transition: opacity 0.8s ease;
+}
+.loader.hidden { opacity: 0; pointer-events: none; }

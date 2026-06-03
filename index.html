@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Immersive · WebGL Experience</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="webgl"></canvas>
+
+  <!-- Минимальный HTML-слой поверх WebGL: текст, доступность, роутинг -->
+  <main class="overlay">
+    <section class="hero">
+      <p class="kicker">CREATIVE DIGITAL EXPERIENCES</p>
+      <h1 class="title">Immersive<br />WebGL</h1>
+      <p class="sub">Three.js · GSAP · Lenis · GLSL · Bloom</p>
+    </section>
+
+    <section class="block">
+      <h2>Скролль вниз</h2>
+      <p>Камера и частицы реагируют на скролл и движение мыши с инерцией.</p>
+    </section>
+
+    <section class="block">
+      <h2>Постобработка</h2>
+      <p>Bloom + лёгкое зерно дают «дорогую» картинку как у референса.</p>
+    </section>
+  </main>
+
+  <div class="loader" id="loader"><span>загрузка…</span></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
