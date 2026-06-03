@@ -38,7 +38,7 @@ function gradientTexture(c0, c1, c2) {
 scene.background = gradientTexture('#1a2138', '#141a2c', '#0a0c14');
 
 const camera = new THREE.PerspectiveCamera(45, sizes.w / sizes.h, 0.1, 100);
-camera.position.set(0, 0, 6.2);          // фиксирована, смотрит в центр
+camera.position.set(0, 0, 10);           // отведена дальше → сцена мельче
 camera.lookAt(0, 0, 0);
 
 // HDR-окружение → отражения/преломления на стекле
@@ -147,15 +147,22 @@ for (let i = 0; i < N; i++) {
   conn.quaternion.setFromUnitVectors(up, dir.clone().normalize());
   spine.add(conn);
 
-  // карточка
-  const card = new THREE.Mesh(cardGeo, glass);
-  card.position.set(px, y, pz);
-  card.rotation.y = a;            // лицом наружу
+  // holder задаёт место и разворот на спирали; карточку внутри анимируем свободно
+  const holder = new THREE.Group();
+  holder.position.set(px, y, pz);
+  holder.rotation.y = a;            // лицом наружу
+  spine.add(holder);
+
+  // карточка — со своей копией материала (чтобы светилась индивидуально)
+  const mat = glass.clone();
+  mat.emissive = new THREE.Color(0x3a6bff);
+  mat.emissiveIntensity = 0;
+  const card = new THREE.Mesh(cardGeo, mat);
   card.userData.phase = i * 0.6;
-  spine.add(card);
+  holder.add(card);
   cards.push(card);
 
-  // тег на карточке (двигается вместе с ней)
+  // тег на карточке (двигается/крутится вместе с ней)
   const label = new THREE.Mesh(
     labelGeo,
     new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, depthWrite: false })
@@ -195,20 +202,43 @@ function setPointer(e) {
   pointer.y = -(e.clientY / sizes.h) * 2 + 1;
   pointerActive = true;
 }
+function hoverIn(card) {
+  gsap.to(card.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.5, ease: 'back.out(2.5)' });
+  gsap.to(card.position, { z: 0.35, duration: 0.5, ease: 'power2.out' });        // выезжает к зрителю
+  gsap.to(card.material, { emissiveIntensity: 0.55, duration: 0.4 });            // свечение
+}
+function hoverOut(card) {
+  gsap.to(card.scale, { x: 1, y: 1, z: 1, duration: 0.45, ease: 'power2.out' });
+  gsap.to(card.position, { z: 0, duration: 0.45, ease: 'power2.out' });
+  gsap.to(card.material, { emissiveIntensity: 0, duration: 0.4 });
+}
 function setHover(obj) {
   if (hovered === obj) return;
-  if (hovered) gsap.to(hovered.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: 'power2.out' });
+  if (hovered) hoverOut(hovered);
   hovered = obj;
-  if (hovered) gsap.to(hovered.scale, { x: 1.12, y: 1.12, z: 1.12, duration: 0.35, ease: 'power2.out' });
+  if (hovered) hoverIn(hovered);
   canvas.style.cursor = hovered ? 'pointer' : 'default';
 }
+// клик: переворот на 360° + «пульс», затем переход
+function clickCard(card) {
+  gsap.to(card.rotation, { y: card.rotation.y + Math.PI * 2, duration: 0.8, ease: 'power3.inOut' });
+  gsap.timeline()
+    .to(card.scale, { x: 1.35, y: 1.35, z: 1.35, duration: 0.15, ease: 'power2.out' })
+    .to(card.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+  gsap.fromTo(card.material, { emissiveIntensity: 1.0 }, { emissiveIntensity: 0.55, duration: 0.6 });
+}
+
 canvas.addEventListener('pointermove', setPointer);
 canvas.addEventListener('pointerdown', (e) => { downPt.x = e.clientX; downPt.y = e.clientY; });
 canvas.addEventListener('pointerup', (e) => {
   if (Math.hypot(e.clientX - downPt.x, e.clientY - downPt.y) > 8) return;  // это скролл, не клик
   setPointer(e);
   raycaster.setFromCamera(pointer, camera);
-  if (raycaster.intersectObjects(cards, false)[0]) window.open(TG, '_blank', 'noopener');
+  const hit = raycaster.intersectObjects(cards, false)[0];
+  if (hit) {
+    clickCard(hit.object);
+    window.open(TG, '_blank', 'noopener');
+  }
 });
 
 // ---------------------------------------------------------------------------
