@@ -7,6 +7,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import gsap from 'gsap';
 import Lenis from '@studio-freight/lenis';
 
+const TG = 'https://t.me/whooopa';
+
 // ---------------------------------------------------------------------------
 // Renderer
 // ---------------------------------------------------------------------------
@@ -25,9 +27,9 @@ const scene = new THREE.Scene();
 function gradientTexture(c0, c1, c2) {
   const cv = document.createElement('canvas');
   cv.width = 4; cv.height = 512;
-  const g = cv.getContext('2d').createLinearGradient(0, 0, 0, 512);
-  g.addColorStop(0, c0); g.addColorStop(0.5, c1); g.addColorStop(1, c2);
   const ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0, c0); g.addColorStop(0.5, c1); g.addColorStop(1, c2);
   ctx.fillStyle = g; ctx.fillRect(0, 0, 4, 512);
   const tex = new THREE.CanvasTexture(cv);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -36,35 +38,37 @@ function gradientTexture(c0, c1, c2) {
 scene.background = gradientTexture('#1a2138', '#141a2c', '#0a0c14');
 
 const camera = new THREE.PerspectiveCamera(45, sizes.w / sizes.h, 0.1, 100);
-camera.position.set(0, 5, 7.5);
+camera.position.set(0, 0, 6.2);          // фиксирована, смотрит в центр
+camera.lookAt(0, 0, 0);
 
 // HDR-окружение → отражения/преломления на стекле
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
-// цветные источники подкрашивают блики стекла
-const l1 = new THREE.PointLight(0x5b8bff, 60, 40); l1.position.set(-5, 4, 4); scene.add(l1);
-const l2 = new THREE.PointLight(0xff77cc, 50, 40); l2.position.set(5, -3, 3); scene.add(l2);
-const l3 = new THREE.PointLight(0x66ffe0, 40, 40); l3.position.set(0, 0, -6); scene.add(l3);
+// цветные источники подкрашивают блики
+const l1 = new THREE.PointLight(0x5b8bff, 60, 50); l1.position.set(-5, 4, 4); scene.add(l1);
+const l2 = new THREE.PointLight(0xff77cc, 50, 50); l2.position.set(5, -3, 3); scene.add(l2);
+const l3 = new THREE.PointLight(0x66ffe0, 40, 50); l3.position.set(0, 0, -6); scene.add(l3);
 scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
 // ---------------------------------------------------------------------------
-// «Позвоночник» + карточки liquid glass на спирали
+// «Позвоночник» + матовые стеклянные карточки
 // ---------------------------------------------------------------------------
 const spine = new THREE.Group();
 scene.add(spine);
 
-const N = 13;            // позвонков/карточек
-const STEP = 0.95;       // расстояние между уровнями
+const N = 8;             // карточек
+const STEP = 1.7;        // больший интервал между карточками
 const R = 2.7;           // радиус спирали
-const ANG = 0.62;        // шаг закрутки спирали (рад)
+const ANG = 0.7;         // шаг закрутки
 const topY = (N - 1) * STEP * 0.5;
+const totalSpan = (N - 1) * STEP;
 
-// --- материал matte liquid glass (фростед: мутное преломление)
+// --- matte liquid glass
 const glass = new THREE.MeshPhysicalMaterial({
   transmission: 1.0,
   thickness: 1.2,
-  roughness: 0.55,          // ← высокая шероховатость = матовое, «молочное» стекло
+  roughness: 0.55,
   ior: 1.42,
   metalness: 0.0,
   clearcoat: 0.4,
@@ -78,7 +82,7 @@ const glass = new THREE.MeshPhysicalMaterial({
   transparent: true,
 });
 
-// --- геометрия карточки: скруглённый прямоугольник с фаской (толстое стекло)
+// --- скруглённая толстая карточка
 function roundedRect(w, h, r) {
   const s = new THREE.Shape();
   const x = -w / 2, y = -h / 2;
@@ -89,17 +93,36 @@ function roundedRect(w, h, r) {
   s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
   return s;
 }
-const cardGeo = new THREE.ExtrudeGeometry(roundedRect(1.5, 2.05, 0.22), {
+const cardGeo = new THREE.ExtrudeGeometry(roundedRect(1.6, 2.15, 0.24), {
   depth: 0.14, bevelEnabled: true, bevelThickness: 0.07, bevelSize: 0.07, bevelSegments: 5, curveSegments: 24,
 });
 cardGeo.center();
 
-// --- центральный хребет: матовый стержень + светящийся «спинной мозг»
+// --- текст-метка (твой тег) на карточке
+function makeLabel() {
+  const cv = document.createElement('canvas');
+  cv.width = 512; cv.height = 256;
+  const ctx = cv.getContext('2d');
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '600 30px Helvetica, Arial, sans-serif';
+  ctx.fillText('T E L E G R A M', 256, 96);
+  ctx.fillStyle = 'rgba(255,255,255,0.96)';
+  ctx.font = '700 64px Helvetica, Arial, sans-serif';
+  ctx.fillText('@whooopa', 256, 156);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return tex;
+}
+const labelTex = makeLabel();
+const labelGeo = new THREE.PlaneGeometry(1.4, 0.7);
+
+// --- центральный хребет (длинный, всегда пересекает центр экрана)
+const rodLen = totalSpan + 5;
 const rodMat = new THREE.MeshPhysicalMaterial({ color: 0xcfd6e6, metalness: 1.0, roughness: 0.25, envMapIntensity: 1.2 });
-const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, N * STEP + 1.2, 24), rodMat);
-spine.add(rod);
-const coreMat = new THREE.MeshBasicMaterial({ color: 0x7fd4ff });
-const core = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, N * STEP + 1.2, 16), coreMat);
+spine.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, rodLen, 24), rodMat));
+const core = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, rodLen, 16), new THREE.MeshBasicMaterial({ color: 0x7fd4ff }));
 spine.add(core);
 
 const vertMat = new THREE.MeshPhysicalMaterial({ color: 0xe8edff, metalness: 0.9, roughness: 0.2, envMapIntensity: 1.2 });
@@ -112,63 +135,60 @@ for (let i = 0; i < N; i++) {
   const px = Math.sin(a) * R;
   const pz = Math.cos(a) * R;
 
-  // позвонок — кольцо вокруг стержня
+  // позвонок
   const vert = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.075, 16, 32), vertMat);
-  vert.position.set(0, y, 0);
-  vert.rotation.x = Math.PI / 2;
+  vert.position.set(0, y, 0); vert.rotation.x = Math.PI / 2;
   spine.add(vert);
 
-  // «отросток» от хребта к карточке
+  // отросток к карточке
   const dir = new THREE.Vector3(px, 0, pz);
-  const len = dir.length();
-  const conn = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, len, 12), vertMat);
+  const conn = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, dir.length(), 12), vertMat);
   conn.position.set(px / 2, y, pz / 2);
   conn.quaternion.setFromUnitVectors(up, dir.clone().normalize());
   spine.add(conn);
 
-  // карточка liquid glass, лицом наружу
+  // карточка
   const card = new THREE.Mesh(cardGeo, glass);
   card.position.set(px, y, pz);
-  card.rotation.y = a;        // смотрит наружу по касательной к спирали
-  card.rotation.x = -0.05;
-  card.userData.phase = i * 0.5;
+  card.rotation.y = a;            // лицом наружу
+  card.userData.phase = i * 0.6;
   spine.add(card);
   cards.push(card);
+
+  // тег на карточке (двигается вместе с ней)
+  const label = new THREE.Mesh(
+    labelGeo,
+    new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, depthWrite: false })
+  );
+  label.position.set(0, 0, 0.14);     // на лицевой грани
+  label.renderOrder = 2;
+  card.add(label);
 }
 
 // intro
 spine.scale.setScalar(0.001);
 gsap.to(spine.scale, { x: 1, y: 1, z: 1, duration: 1.6, ease: 'power3.out', delay: 0.2 });
-window.addEventListener('load', () => {
-  document.querySelector('#loader')?.classList.add('hidden');
-  gsap.from('.flyer', { opacity: 0, x: -30, duration: 1.1, ease: 'power2.out', delay: 0.5 });
-});
 
 // ---------------------------------------------------------------------------
-// Постобработка: bloom для свечения хребта и бликов стекла
+// Постобработка
 // ---------------------------------------------------------------------------
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-composer.addPass(new UnrealBloomPass(new THREE.Vector2(sizes.w, sizes.h), 0.5, 0.7, 0.85));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(sizes.w, sizes.h), 0.45, 0.7, 0.85));
 composer.addPass(new OutputPass());
 
 // ---------------------------------------------------------------------------
-// Скролл → вращение оси + спуск камеры вдоль позвоночника
+// Скролл
 // ---------------------------------------------------------------------------
 const lenis = new Lenis({ smoothWheel: true, lerp: 0.08 });
 let targetProg = 0;
 lenis.on('scroll', ({ progress }) => { targetProg = progress || 0; });
 
-const flyer = document.querySelector('#flyer');
-const bottomY = -topY;
-
 // --- клик/наведение по карточкам → Telegram
-const TG = 'https://t.me/whooopa';
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
-let pointerActive = false;
-let hovered = null;
-const down = { x: 0, y: 0 };
+let pointerActive = false, hovered = null;
+const downPt = { x: 0, y: 0 };
 
 function setPointer(e) {
   pointer.x = (e.clientX / sizes.w) * 2 - 1;
@@ -182,50 +202,40 @@ function setHover(obj) {
   if (hovered) gsap.to(hovered.scale, { x: 1.12, y: 1.12, z: 1.12, duration: 0.35, ease: 'power2.out' });
   canvas.style.cursor = hovered ? 'pointer' : 'default';
 }
-
 canvas.addEventListener('pointermove', setPointer);
-canvas.addEventListener('pointerdown', (e) => { down.x = e.clientX; down.y = e.clientY; });
+canvas.addEventListener('pointerdown', (e) => { downPt.x = e.clientX; downPt.y = e.clientY; });
 canvas.addEventListener('pointerup', (e) => {
-  // отличаем клик от скролл-перетаскивания
-  if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return;
+  if (Math.hypot(e.clientX - downPt.x, e.clientY - downPt.y) > 8) return;  // это скролл, не клик
   setPointer(e);
   raycaster.setFromCamera(pointer, camera);
-  if (raycaster.intersectObjects(cards, false)[0]) {
-    window.open(TG, '_blank', 'noopener');
-  }
+  if (raycaster.intersectObjects(cards, false)[0]) window.open(TG, '_blank', 'noopener');
 });
 
+// ---------------------------------------------------------------------------
+// Цикл
+// ---------------------------------------------------------------------------
 const clock = new THREE.Clock();
 let prog = 0;
 function tick(time) {
   lenis.raf(time);
   const t = clock.getElapsedTime();
-  prog += (targetProg - prog) * 0.08;     // плавность
+  prog += (targetProg - prog) * 0.08;
 
-  // вся ось вращается вокруг Y (+ лёгкое холостое вращение)
-  spine.rotation.y = prog * Math.PI * 2 * 1.5 + t * 0.04;
+  // поворот и вертикальный сдвиг синхронизированы так,
+  // что каждая карточка по очереди проходит точно через центр экрана
+  spine.rotation.y = -prog * (N - 1) * ANG;
+  spine.position.y = -topY + prog * totalSpan;
 
-  // камера спускается вдоль хребта сверху вниз
-  camera.position.y = THREE.MathUtils.lerp(topY + 1.0, bottomY - 1.0, prog);
-  camera.position.x = Math.sin(t * 0.2) * 0.3;   // едва заметное дыхание
-  camera.lookAt(0, camera.position.y, 0);
-
-  // «жидкое» покачивание карточек
+  // «жидкое» покачивание
   for (const c of cards) {
-    c.position.y += Math.sin(t * 1.2 + c.userData.phase) * 0.0012;
     c.rotation.z = Math.sin(t * 0.8 + c.userData.phase) * 0.04;
   }
 
-  // наведение на карточки (подсветка масштабом)
   if (pointerActive) {
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObjects(cards, false)[0];
     setHover(hit ? hit.object : null);
   }
-
-  // текст слегка уезжает и затухает к концу
-  flyer.style.opacity = String(1 - prog * 0.85);
-  flyer.style.transform = `translateY(calc(-50% + ${prog * -60}px))`;
 
   composer.render();
   requestAnimationFrame(tick);

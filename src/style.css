@@ -1,15 +1,11 @@
 :root {
   --bg: #0c0e16;
-  --ink: #eef2ff;
-  --muted: #9aa6c4;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 html, body {
   background: var(--bg);
-  color: var(--ink);
-  font-family: "Helvetica Neue", Inter, system-ui, sans-serif;
   overflow-x: hidden;
 }
 
@@ -22,114 +18,5 @@ html, body {
   z-index: 0;
 }
 
-.brand {
-  position: fixed;
-  top: 28px;
-  left: 32px;
-  z-index: 3;
-  font-size: 0.85rem;
-  letter-spacing: 0.28em;
-  font-weight: 700;
-  color: var(--ink);
-  opacity: 0.9;
-  text-decoration: none;
-  cursor: pointer;
-}
-.brand:hover { opacity: 1; }
-
-/* ссылка-юзернейм в углу */
-.tg {
-  position: fixed;
-  top: 28px;
-  right: 32px;
-  z-index: 3;
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
-  font-weight: 700;
-  color: var(--ink);
-  text-decoration: none;
-  opacity: 0.9;
-  cursor: pointer;
-}
-.tg:hover { opacity: 1; }
-
-/* стеклянная (frosted) кнопка-CTA */
-.cta {
-  display: inline-block;
-  margin-top: 1.6rem;
-  padding: 0.85rem 1.4rem;
-  border-radius: 14px;
-  font-size: 0.9rem;
-  letter-spacing: 0.04em;
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration: none;
-  pointer-events: auto;          /* кликабельна, хотя .flyer не ловит события */
-  cursor: pointer;
-  background: rgba(180, 205, 255, 0.10);
-  border: 1px solid rgba(200, 220, 255, 0.30);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  box-shadow: 0 8px 30px rgba(40, 70, 140, 0.25), inset 0 1px 0 rgba(255,255,255,0.25);
-  transition: transform 0.25s ease, background 0.25s ease;
-}
-.cta:hover { transform: translateY(-2px); background: rgba(180, 205, 255, 0.18); }
-
-.flyer {
-  position: fixed;
-  top: 50%;
-  left: 8vw;
-  z-index: 2;
-  width: min(78vw, 360px);
-  transform: translateY(-50%);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-.flyer .kicker {
-  font-size: 0.72rem;
-  letter-spacing: 0.34em;
-  color: var(--muted);
-  margin-bottom: 1rem;
-}
-.flyer h1 {
-  font-size: clamp(2.6rem, 9vw, 5rem);
-  line-height: 0.92;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-  margin-bottom: 1.1rem;
-}
-.flyer .desc {
-  font-size: 0.98rem;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
-.hint {
-  position: fixed;
-  bottom: 26px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
-  font-size: 0.75rem;
-  letter-spacing: 0.3em;
-  color: var(--muted);
-  animation: bob 2s ease-in-out infinite;
-}
-@keyframes bob { 0%,100%{ transform: translate(-50%,0);} 50%{ transform: translate(-50%,6px);} }
-
-.scrollspace { height: 420vh; pointer-events: none; }
-
-.loader {
-  position: fixed;
-  inset: 0;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  letter-spacing: 0.3em;
-  font-size: 0.8rem;
-  color: var(--muted);
-  transition: opacity 0.8s ease;
-}
-.loader.hidden { opacity: 0; pointer-events: none; }
+/* высота для прокрутки */
+.scrollspace { height: 600vh; pointer-events: none; }
