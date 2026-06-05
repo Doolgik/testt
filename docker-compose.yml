@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    container_name: whatsapp-crm-bot
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # История диалогов переживает рестарт контейнера.
+      - ./data:/app/data
+      # Правки базы знаний без пересборки образа.
+      - ./knowledge_base:/app/knowledge_base
