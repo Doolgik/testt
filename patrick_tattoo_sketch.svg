@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="760" viewBox="0 0 600 760">
+  <defs>
+    <style>
+      .ink   { fill:none; stroke:#1a1a1a; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+      .thin  { fill:none; stroke:#1a1a1a; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+      .fillp { fill:#f6a8c0; stroke:#1a1a1a; stroke-width:5; stroke-linejoin:round; }
+      .green { fill:#9bd17a; stroke:#1a1a1a; stroke-width:5; stroke-linejoin:round; }
+      .white { fill:#ffffff; stroke:#1a1a1a; stroke-width:4; }
+      .dark  { fill:#1a1a1a; }
+      .dots  { fill:#d97a99; }
+      .banner{ fill:#ffe9b0; stroke:#1a1a1a; stroke-width:4; stroke-linejoin:round; }
+    </style>
+  </defs>
+
+  <!-- background -->
+  <rect width="600" height="760" fill="#fbf7ef"/>
+
+  <!-- ===== PATRICK STAR BODY (5-point star) ===== -->
+  <path class="fillp" d="
+    M300 70
+    C 330 150, 360 200, 470 215
+    C 540 225, 560 250, 500 300
+    C 430 360, 415 400, 450 520
+    C 470 600, 440 625, 360 575
+    C 305 540, 295 540, 240 575
+    C 160 625, 130 600, 150 520
+    C 185 400, 170 360, 100 300
+    C 40 250, 60 225, 130 215
+    C 240 200, 270 150, 300 70 Z"/>
+
+  <!-- belly shading line -->
+  <path class="thin" d="M210 430 C 260 470, 340 470, 390 430" />
+
+  <!-- shorts (green with purple flowers) -->
+  <path class="green" d="
+    M200 470
+    C 250 510, 350 510, 400 470
+    C 415 520, 455 560, 440 525
+    C 470 600, 440 625, 360 575
+    C 305 540, 295 540, 240 575
+    C 160 625, 130 600, 150 525
+    C 148 560, 185 520, 200 470 Z"/>
+
+  <!-- flowers on shorts -->
+  <g>
+    <g transform="translate(250,545)">
+      <circle r="9" fill="#b56ab0" stroke="#1a1a1a" stroke-width="2.5"/>
+      <circle cx="0" cy="-16" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="15" cy="-6" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="9" cy="13" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="-9" cy="13" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="-15" cy="-6" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle r="4" fill="#ffe066"/>
+    </g>
+    <g transform="translate(350,540)">
+      <circle r="9" fill="#b56ab0" stroke="#1a1a1a" stroke-width="2.5"/>
+      <circle cx="0" cy="-16" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="15" cy="-6" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="9" cy="13" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="-9" cy="13" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle cx="-15" cy="-6" r="7" fill="#cf8fc9" stroke="#1a1a1a" stroke-width="2"/>
+      <circle r="4" fill="#ffe066"/>
+    </g>
+  </g>
+
+  <!-- belt line of shorts -->
+  <path class="thin" d="M205 478 C 255 512, 345 512, 395 478" />
+
+  <!-- ===== FACE ===== -->
+  <!-- eyebrows -->
+  <path class="ink" d="M232 250 q 28 -22 60 -6" />
+  <path class="ink" d="M308 244 q 32 -16 60 6" />
+
+  <!-- eyes -->
+  <ellipse class="white" cx="265" cy="280" rx="26" ry="30"/>
+  <ellipse class="white" cx="335" cy="280" rx="26" ry="30"/>
+  <circle class="dark" cx="272" cy="284" r="8"/>
+  <circle class="dark" cx="328" cy="284" r="8"/>
+  <circle fill="#fff" cx="275" cy="281" r="2.5"/>
+  <circle fill="#fff" cx="331" cy="281" r="2.5"/>
+
+  <!-- nose -->
+  <path class="thin" d="M298 300 q -10 18 6 26 q 12 4 14 -6" />
+
+  <!-- big goofy smile -->
+  <path class="ink" d="M250 350 q 50 55 110 8" />
+  <path class="thin" d="M268 360 q 32 26 66 6" />
+
+  <!-- cheek dots / freckles texture -->
+  <circle class="dots" cx="230" cy="335" r="3.5"/>
+  <circle class="dots" cx="246" cy="348" r="3.5"/>
+  <circle class="dots" cx="370" cy="332" r="3.5"/>
+  <circle class="dots" cx="356" cy="346" r="3.5"/>
+
+  <!-- ===== ARMS ===== -->
+  <path class="thin" d="M120 290 q -24 18 -16 44" />
+  <path class="thin" d="M480 290 q 24 18 16 44" />
+
+  <!-- ===== BANNER / TATTOO LETTERING ===== -->
+  <g transform="translate(0,0)">
+    <path class="banner" d="
+      M90 650
+      C 200 620, 400 620, 510 650
+      L 500 705
+      C 390 678, 210 678, 100 705 Z"/>
+    <!-- ribbon tails -->
+    <path class="banner" d="M90 650 L 55 672 L 85 690 L 100 678 Z"/>
+    <path class="banner" d="M510 650 L 545 672 L 515 690 L 500 678 Z"/>
+    <text x="300" y="688" text-anchor="middle"
+          font-family="Georgia, 'Times New Roman', serif"
+          font-size="38" font-weight="bold" letter-spacing="3"
+          fill="#1a1a1a">PATRICK</text>
+  </g>
+
+  <!-- little stars decoration -->
+  <g fill="#1a1a1a">
+    <path d="M70 150 l6 14 l15 1 l-11 10 l4 15 l-14 -8 l-14 8 l4 -15 l-11 -10 l15 -1 Z" opacity="0.85"/>
+    <path d="M530 150 l5 12 l13 1 l-10 9 l3 13 l-11 -7 l-11 7 l3 -13 l-10 -9 l13 -1 Z" opacity="0.85"/>
+  </g>
+
+  <!-- sketch frame -->
+  <rect x="14" y="14" width="572" height="732" fill="none" stroke="#1a1a1a" stroke-width="2.5" rx="14" opacity="0.5"/>
+</svg>
