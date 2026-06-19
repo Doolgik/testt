@@ -35,6 +35,13 @@ const VIDEOS = [
 ];
 
 async function main() {
+  // Идемпотентность: если в базе уже есть видео — не дублируем демо-контент.
+  const existing = await prisma.video.count();
+  if (existing > 0) {
+    console.log(`ℹ️  В базе уже ${existing} видео — сид пропущен.`);
+    return;
+  }
+
   console.log('🌱 Заполняем демо-данными…');
 
   const users = [];
