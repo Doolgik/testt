@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+// ====== Пользователи / каналы ======
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  // данные канала
+  handle        String?   @unique
+  description   String?   @db.Text
+  banner        String?
+  createdAt     DateTime  @default(now())
+
+  accounts      Account[]
+  sessions      Session[]
+
+  videos        Video[]
+  comments      Comment[]
+  likes         Like[]
+  views         View[]
+
+  // подписки
+  subscriptions Subscription[] @relation("subscriber")
+  subscribers   Subscription[] @relation("channel")
+}
+
+// ====== NextAuth таблицы ======
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ====== Видео ======
+model Video {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  videoUrl     String
+  thumbnailUrl String?
+  duration     Int      @default(0) // секунды
+  category     String   @default("Разное")
+  tags         String[] @default([])
+  views        Int      @default(0)
+  visibility   String   @default("public") // public | unlisted | private
+  createdAt    DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  comments Comment[]
+  likes    Like[]
+  viewLogs View[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([category])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  text      String   @db.Text
+  createdAt DateTime @default(now())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  type      String   @default("like") // like | dislike
+  createdAt DateTime @default(now())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  subscriberId String
+  subscriber   User   @relation("subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  channelId    String
+  channel      User   @relation("channel", fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriberId, channelId])
+  @@index([channelId])
+}
+
+// История просмотров — топливо для рекомендаций
+model View {
+  id           String   @id @default(cuid())
+  watchSeconds Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([videoId])
+}
