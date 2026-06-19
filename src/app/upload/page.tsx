@@ -38,30 +38,73 @@ export default function UploadPage() {
     setPreviewUrl(URL.createObjectURL(f));
   }
 
-  /** Вытаскиваем длительность и кадр-превью из выбранного файла. */
+  /**
+   * Вытаскиваем длительность и кадр-превью из выбранного файла.
+   * Всё со страховочными таймаутами: на iOS/Safari эти события иногда не
+   * приходят, и без таймаута публикация зависала бы навсегда. Если превью
+   * не получилось — не страшно, публикуем видео без него.
+   */
   async function extractMeta(): Promise<{ duration: number; thumbBlob: Blob | null }> {
     const el = videoRef.current;
     if (!el) return { duration: 0, thumbBlob: null };
-    await new Promise<void>((res) => {
-      if (el.readyState >= 1) return res();
-      el.onloadedmetadata = () => res();
-    });
-    const duration = Math.floor(el.duration || 0);
-    // кадр на 25% длительности
-    await new Promise<void>((res) => {
-      el.onseeked = () => res();
-      el.currentTime = Math.min(duration * 0.25 || 1, 5);
-    });
-    const canvas = document.createElement('canvas');
-    canvas.width = 640;
-    canvas.height = Math.round((640 * (el.videoHeight || 9)) / (el.videoWidth || 16));
-    const ctx = canvas.getContext('2d');
-    let thumbBlob: Blob | null = null;
-    if (ctx) {
-      ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
-      thumbBlob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', 0.8));
+
+    // ждём событие, но не дольше ms
+    const waitEvent = (name: string, ms: number) =>
+      new Promise<void>((res) => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          el.removeEventListener(name, finish);
+          res();
+        };
+        el.addEventListener(name, finish, { once: true });
+        setTimeout(finish, ms);
+      });
+
+    try {
+      if (el.readyState < 1) await waitEvent('loadedmetadata', 6000);
+      const duration = Number.isFinite(el.duration) ? Math.floor(el.duration) : 0;
+
+      // перематываем на 25% длительности для кадра-превью
+      const seekPromise = waitEvent('seeked', 4000);
+      try {
+        el.currentTime = Math.min((duration || 4) * 0.25, 5);
+      } catch {
+        /* некоторые форматы не дают перемотку — берём текущий кадр */
+      }
+      await seekPromise;
+
+      let thumbBlob: Blob | null = null;
+      try {
+        if (el.videoWidth > 0) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 640;
+          canvas.height = Math.round((640 * el.videoHeight) / el.videoWidth);
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+            thumbBlob = await new Promise<Blob | null>((res) => {
+              let settled = false;
+              const ok = (b: Blob | null) => {
+                if (!settled) {
+                  settled = true;
+                  res(b);
+                }
+              };
+              canvas.toBlob((b) => ok(b), 'image/jpeg', 0.8);
+              setTimeout(() => ok(null), 3000);
+            });
+          }
+        }
+      } catch {
+        thumbBlob = null;
+      }
+
+      return { duration, thumbBlob };
+    } catch {
+      return { duration: 0, thumbBlob: null };
     }
-    return { duration, thumbBlob };
   }
 
   async function submit(e: React.FormEvent) {
@@ -219,11 +262,13 @@ export default function UploadPage() {
                     {stage === 'uploading' && 'Загружаем видео…'}
                     {stage === 'saving' && 'Сохраняем…'}
                   </span>
-                  <span>{progress}%</span>
+                  <span>{stage === 'uploading' ? `${progress}%` : ''}</span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-surface-2">
                   <div
-                    className="h-full bg-gradient-to-r from-brand to-fuchsia-500 transition-all"
+                    className={`h-full bg-gradient-to-r from-brand to-fuchsia-500 ${
+                      stage === 'uploading' ? 'transition-all' : 'animate-pulse'
+                    }`}
                     style={{ width: `${stage === 'uploading' ? progress : 100}%` }}
                   />
                 </div>
