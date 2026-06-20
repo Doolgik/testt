@@ -1,31 +1,65 @@
-import type { Metadata, Viewport } from 'next';
-import { Providers } from './providers';
-import { Header } from '@/components/Header';
-import { Sidebar } from '@/components/Sidebar';
+import type { Metadata } from 'next';
+import { Manrope, Inter } from 'next/font/google';
 import './globals.css';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
+
+const manrope = Manrope({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['500', '600', '700', '800'],
+  variable: '--font-manrope',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'РуТуб — видеоплатформа',
-  description: 'Смотри, загружай и делись видео. Своя видеоплатформа с рекомендациями.',
+  metadataBase: new URL('https://novaconsulting.eu'),
+  title: {
+    default: 'NOVA Consulting Group — Цифровая трансформация бизнеса',
+    template: '%s — NOVA Consulting Group',
+  },
+  description:
+    'Премиальный консалтинг для среднего и крупного бизнеса: внедрение AI, автоматизация процессов, аналитика и BI-системы. От аудита и стратегии до внедрения и поддержки.',
+  keywords: [
+    'цифровая трансформация',
+    'AI-внедрение',
+    'автоматизация бизнеса',
+    'BI-аналитика',
+    'консалтинг',
+    'NOVA Consulting',
+  ],
+  openGraph: {
+    title: 'NOVA Consulting Group',
+    description:
+      'Технологии, которые превращают данные в конкурентное преимущество.',
+    type: 'website',
+    locale: 'ru_RU',
+  },
 };
 
-export const viewport: Viewport = {
-  themeColor: '#0f0f0f',
-  width: 'device-width',
-  initialScale: 1,
-};
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="ru" className="dark">
-      <body className="min-h-screen bg-bg text-white antialiased">
-        <Providers>
-          <Header />
-          <div className="flex">
-            <Sidebar />
-            <main className="min-w-0 flex-1 px-3 pb-20 pt-2 sm:px-6">{children}</main>
-          </div>
-        </Providers>
+    <html lang="ru" className={`${manrope.variable} ${inter.variable}`}>
+      <body className="bg-canvas text-ink antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-sm focus:text-white"
+        >
+          Перейти к содержанию
+        </a>
+        <SiteHeader />
+        <main id="main">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   );
