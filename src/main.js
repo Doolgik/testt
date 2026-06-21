@@ -52,6 +52,63 @@ const l3 = new THREE.PointLight(0x66ffe0, 40, 50); l3.position.set(0, 0, -6); sc
 scene.add(new THREE.AmbientLight(0xffffff, 0.25));
 
 // ---------------------------------------------------------------------------
+// Фоновый слой: летающие ножницы ✂️ с реакцией на курсор
+// ---------------------------------------------------------------------------
+function emojiTexture(emoji) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 128;
+  const ctx = cv.getContext('2d');
+  ctx.font = '96px serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(emoji, 64, 72);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+const scissorsTex = emojiTexture('✂️');
+const SCI_N = 40, SCI_Z = -4, SCI_R = 3.0, SCI_PUSH = 0.05;
+const sciItems = [];
+for (let i = 0; i < SCI_N; i++) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: scissorsTex, transparent: true, opacity: 0.8, depthWrite: false,
+  }));
+  sp.position.set((Math.random() - 0.5) * 28, (Math.random() - 0.5) * 18, SCI_Z + (Math.random() - 0.5) * 3);
+  sp.scale.setScalar(0.9 + Math.random() * 0.7);
+  sp.userData = {
+    home: sp.position.clone(), vel: new THREE.Vector3(),
+    spin: (Math.random() - 0.5) * 0.03,
+    phase: Math.random() * 6.28, amp: 0.4 + Math.random() * 0.6, speed: 0.15 + Math.random() * 0.3,
+  };
+  scene.add(sp); sciItems.push(sp);
+}
+const cursorWorld = new THREE.Vector3();
+const tmpV = new THREE.Vector3();
+function updateScissors(t) {
+  // курсор → мир на глубине SCI_Z
+  tmpV.set(pointer.x, pointer.y, 0.5).unproject(camera);
+  tmpV.sub(camera.position).normalize();
+  cursorWorld.copy(camera.position).add(tmpV.multiplyScalar((SCI_Z - camera.position.z) / tmpV.z));
+
+  for (const sp of sciItems) {
+    const ud = sp.userData, p = sp.position, v = ud.vel;
+    // мягкий дрейф вокруг «домашней» точки
+    v.x += (ud.home.x + Math.sin(t * ud.speed + ud.phase) * ud.amp - p.x) * 0.02;
+    v.y += (ud.home.y + Math.cos(t * ud.speed * 0.8 + ud.phase) * ud.amp - p.y) * 0.02;
+    v.z += (ud.home.z - p.z) * 0.02;
+    // отталкивание от курсора
+    const dx = p.x - cursorWorld.x, dy = p.y - cursorWorld.y, dz = p.z - cursorWorld.z;
+    const d = Math.hypot(dx, dy, dz);
+    if (pointerActive && d < SCI_R) {
+      const f = (SCI_R - d) * SCI_PUSH / (d || 1);
+      v.x += dx * f; v.y += dy * f; v.z += dz * f;
+    }
+    v.multiplyScalar(0.9);                       // затухание
+    p.add(v);
+    sp.material.rotation += ud.spin + v.length() * 0.5;   // крутятся при движении
+  }
+}
+
+// ---------------------------------------------------------------------------
 // «Позвоночник» + матовые стеклянные карточки
 // ---------------------------------------------------------------------------
 const spine = new THREE.Group();
@@ -260,6 +317,8 @@ function tick(time) {
   for (const c of cards) {
     c.rotation.z = Math.sin(t * 0.8 + c.userData.phase) * 0.04;
   }
+
+  updateScissors(t);   // фоновые ножницы + реакция на курсор
 
   if (pointerActive) {
     raycaster.setFromCamera(pointer, camera);
