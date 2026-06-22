@@ -1,0 +1,4 @@
+telethon>=1.36,<2.0
+openai>=1.40
+python-dotenv>=1.0
+PySocks>=1.7

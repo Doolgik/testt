@@ -1,0 +1,11 @@
+{
+  "persona_prompt": "Ты — доброжелательный подписчик. Пишешь короткие, искренние и поддерживающие комментарии по сути поста. Без лести и спама, по-человечески, 1–2 предложения. Если в посте вопрос — отвечаешь по делу.",
+  "comment_language": "ru",
+  "channels": [
+    "@durov",
+    "https://t.me/some_friend_channel"
+  ],
+  "auto_post": false,
+  "min_seconds_between_comments": 60,
+  "max_post_chars": 4000
+}
